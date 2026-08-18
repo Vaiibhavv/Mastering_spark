@@ -1,0 +1,84 @@
+## What is Shuffling?
+
+1. In Apache Spark, shuffling is a process that occurs during wide transformations (such as group by or join operations) to rearrange data across the cluster (0:26-0:31).
+
+- Why it happens: The goal is to bring together related data that currently resides on different nodes in the cluster so that operations like aggregations can be performed efficiently.
+
+- How it works: Data is redistributed across the network into new partitions, known as shuffle partitions, which are then processed by the cluster's cores
+
+
+- Why are shuffle partitions important for performance? What is data skew in Spark? how to tune and set shuffle partition? how to calculate the data on each partitio, what is the forrmula, what shoudl be the idea partion size?
+
+- To optimize your Spark jobs, tuning shuffle partitions is essential. Improperly configured partitions can lead to significant performance bottlenecks or under-utilization of your cluster resources.
+
+- The Formula for Partition Size
+- To calculate the amount of data processed by each core (per shuffle partition), use the following formula 
+
+![alt text](image.png)
+
+* Ideal Partition Size
+`According to best practices, the optimal size for each shuffle partition should fall within the range of 1 MB to 200 MB`
+
+* How to Tune
+- To achieve the ideal balance, you can adjust the spark.sql.shuffle.partitions property.
+
+- Determine the workload: 
+
+- Check the Spark UI to find the total amount of data being shuffled 
+Calculate the target: Divide your total shuffle data size by the desired partition size (e.g., 200 MB) to get the required number of partitions 
+
+![alt text](image-1.png)
+
+- Set the property: Update your configuration using spark.conf.set("spark.sql.shuffle.partitions", [calculated_number]).
+
+`Important Note: If your data per partition is too small, your cluster resources will sit idle because you have more partitions than available cores. Conversely, if it is too large, the processing time will increase significantly.`
+
+
+* how to calculate the number of shuffle partiotion based on desired size
+
+- To determine the ideal number of shuffle partitions, you can use a straightforward calculation based on your total data size and your target partition size (typically between 1 MB and 200 MB) (10:37-10:50).
+
+- The Calculation Formula
+- To find the number of partitions needed, use this formula
+
+![alt text](image-2.png)
+
+
+## Practical Steps for Tuning
+1. Analyze your data: Check the Spark UI during a job run to identify the exact amount of data being shuffled (9:12).
+2. Define your target: Decide on an optimal size for each partition (e.g., 200 MB).
+Calculate: Divide the total shuffled data size (e.g., 300 GB) by your target size (e.g., 200 MB) .
+3. Apply the setting: Update the configuration in your code using spark.conf.set("spark.sql.shuffle.partitions", [calculated_number]) .
+Key Considerations:
+
+- Too few partitions: Each core processes too much data, leading to slow performance .
+- Too many partitions: Data per partition becomes too small (e.g., a few KB), resulting in overhead and idle cluster resources (13:35-13:50).
+Cluster utilization: Ensure your choice also aligns with the number of available cores in your cluster to avoid wasting resources.
+
+
+## What is the Spark UI shuffle tab?
+
+- There is no single "Shuffle tab" in the Spark UI; instead, shuffle metrics are distributed across several tabs to help you monitor performance and troubleshoot bottlenecks. To inspect shuffle activity, you should navigate to the following areas:
+
+1. Stages Tab: This is the most critical place for analyzing shuffle performance. When you click into a specific stage, you can view Shuffle Read (data read by reducers) and Shuffle Write (data written by mappers) metrics. This is also where you can identify Shuffle Spill (memory vs. disk), which indicates when your executors run out of memory and start writing to disk.
+2. Executors Tab: This provides a high-level summary of shuffle metrics per executor. It is useful for identifying if specific nodes are performing a disproportionate amount of shuffle work, which can highlight issues like data skew.
+
+3. SQL Tab: If you are using Spark SQL, the SQL tab allows you to view the Query Plan. This is vital for seeing if your joins or aggregations are triggering inefficient shuffle operations.
+
+
+## What is shuffle spill?
+- Shuffle spill occurs in Apache Spark when a task performs a transformation (like a join or aggregation) that requires more memory than is available in the executor's execution memory. When this happens, Spark is forced to move intermediate data from RAM (memory) to disk to free up space. This process is significantly slower than in-memory processing and is a common indicator of performance bottlenecks.
+
+- Key Metrics
+In the Spark UI, you will typically see Shuffle spill reported as a pair of values:
+
+1. Shuffle spill (memory): The size of the de-serialized data in memory at the time it was forced to spill to disk.
+Shuffle spill (disk): The actual size of the serialized data written to the disk.
+
+## Common Causes and Fixes
+1. Insufficient Executor Memory: If your tasks are memory-intensive, you may need to increase the memory allocated to your executors.
+
+2. Oversized Partitions: If the amount of data per shuffle partition is too large, it exceeds the memory buffer. You can often fix this by increasing the number of shuffle partitions using spark.sql.shuffle.partitions.
+
+3. Data Skew: If one partition is significantly larger than others (due to unevenly distributed keys), that specific task will spill even if others do not. Solutions include salting or enabling Adaptive Query Execution (AQE).
+Inefficient Operations: Ensure you are using optimal transformations; for example, using reduceByKey instead of groupByKey can help reduce the amount of data shuffled.
