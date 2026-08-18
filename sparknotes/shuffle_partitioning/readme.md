@@ -82,3 +82,38 @@ Shuffle spill (disk): The actual size of the serialized data written to the disk
 
 3. Data Skew: If one partition is significantly larger than others (due to unevenly distributed keys), that specific task will spill even if others do not. Solutions include salting or enabling Adaptive Query Execution (AQE).
 Inefficient Operations: Ensure you are using optimal transformations; for example, using reduceByKey instead of groupByKey can help reduce the amount of data shuffled.
+
+
+## What is spark.sql.files.maxPartitionBytes? 
+
+- The `spark.sql.files.maxPartitionBytes`
+ property is a configuration setting in Apache Spark that determines the maximum size of a single partition when reading files.
+
+- Here is how it functions:
+
+1. Splitting Files: It tells Spark to divide large input files into smaller, manageable chunks based on the byte size you specify. 
+
+- For example, if you set this to 128 MB and have a 512 MB file, Spark will split it into four partitions of 128 MB each.
+
+2. Controlling Parallelism: By adjusting this value, you can influence how many tasks Spark creates during the read operation. Smaller values lead to more, smaller partitions, which can increase parallelism but might lead to overhead if they become too small.
+
+3. Read-Time Impact: This property specifically affects the data at the read time when you first load your dataset into a DataFrame, helping you avoid processing massive, singular files that would otherwise be handled by a single core.
+
+![alt text](image-3.png)
+
+
+## Practical Optimization 
+- Use CasesModifying this value allows data engineers to balance cluster parallelism against metadata overhead:
+
+1. Decrease the value (e.g., down to 32 MB or 64 MB) if you have massive source files and your cluster has unutilized CPU cores. Smaller partition bytes force Spark to generate more partitions, increasing total job concurrency.
+
+2. Increase the value (e.g., up to 256 MB or 512 MB) if you are facing OutOfMemoryError (OOM) issues due to high GC overhead or too many concurrent tasks. It is also useful if your data features wide schemas with complex string objects that expand significantly when uncompressed into memory.
+
+* Python
+`spark.conf.set("spark.sql.files.maxPartitionBytes", "67108864")`
+
+* Scala/SparkSql
+
+`spark.conf.set("spark.sql.files.maxPartitionBytes", 268435456)`
+
+- For controlling partitions during joins, group-bys, or aggregations, modify `spark.sql.shuffle.partitions` or rely on Adaptive Query Execution (AQE) using `spark.sql.adaptive.advisoryPartitionSizeInBytes` instead.
