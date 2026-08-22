@@ -38,7 +38,7 @@ $$\text{Number of Buckets} = \frac{\text{Total Dataset Size}}{\text{Optimal Buck
 
 While bucketing is designed to minimize data movement, it can still trigger a shuffle in certain scenarios where the bucketing strategy does not align with the query requirements. Here are the primary cases where this happens:
 
-* **Mismatched Bucket Counts:** If you are performing a join between two bucketed datasets, but they were created with a different number of buckets ($X$ vs $Y$), Spark must shuffle one of the datasets to redistribute it into the target number of buckets so the join can proceed (19:35 - 20:20).
+* **Mismatched Bucket Counts:** If you are performing a join between two bucketed datasets, but they were created with a different number of buckets ($X$ vs $Y$), Spark must shuffle one of the datasets to redistribute it into the target number of buckets so the join can proceed.
 
 * **Incorrect Join Keys:** Even if both datasets are bucketed with the same number of buckets, if you join them using a column **other than** the one used for bucketing, the bucketing metadata is rendered useless for that operation. This forces Spark to perform a full shuffle to reorganize the data by the new join key.
 
