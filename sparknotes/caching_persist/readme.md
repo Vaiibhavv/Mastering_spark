@@ -38,9 +38,10 @@ More compact, saving memory space, but requires additional CPU cycles to deseria
 - The default setting if no level is specified. It stores data in memory, but if the DataFrame exceeds available RAM, the remaining partitions are spilled to the disk.
 
 3. #### MEMORY_ONLY_SER: 
-Stores data in memory in a serialized format (as bytes). This is more compact than deserialized storage, saving memory space, but requires additional CPU cycles to deserialize the data when accessed.
+- Stores data in memory in a serialized format (as bytes). This is more compact than deserialized storage, saving memory space, but requires additional CPU cycles to deserialize the data when accessed.
 
 4. #### DISK_ONLY: 
 - Bypasses memory entirely and stores the data only on the disk in a serialized format. This is useful for large datasets that do not fit in memory but are still reused frequently across operations.
 
-* Additionally, many of these levels have variants with a suffix of '2' (e.g., MEMORY_ONLY_2), which instructs Spark to replicate the data on two cluster nodes for increased fault tolerance.
+--- 
+Additionally, many of these levels have variants with a suffix of '2' (e.g., MEMORY_ONLY_2), which instructs Spark to replicate the data on two cluster nodes for increased fault tolerance.
