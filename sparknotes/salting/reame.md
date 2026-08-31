@@ -38,4 +38,26 @@
 * Practical Tip: Start by looking at your current shuffle partition count. The goal is to choose a number that ensures your data is spread more evenly across those available partitions.
 
 ----
-Refer the Salting Practical example in ([Pyspark_Examples](../../pyspark_scenarios.ipynb))
+* Refer the Salting Practical example in ([Pyspark_Examples](../../pyspark_scenarios.ipynb))
+
+--- 
+## Another Methods to handled the skew data 
+
+1. ## AQE
+ - (AQE): Enable Spark's built-in skew join optimization (spark.sql.adaptive.skewJoin.enabled), which automatically detects and splits oversized shuffle partitions during runtime.
+
+ - AQE, or Adaptive Query Execution, allows Spark to modify the physical execution plan at runtime using actual statistics collected during execution. This is different from traditional planning, where Spark largely relies on estimates before execution. For data skew, after a shuffle stage completes, AQE examines the actual sizes of shuffle partitions. If a partition is significantly larger than the median and exceeds the configured skew threshold, Spark can identify it as skewed and split that partition into smaller pieces. 
+ 
+ - For a skewed join, Spark can process those pieces in parallel, preventing one large partition from becoming a long-running straggler task. AQE also provides other optimizations such as coalescing small post-shuffle partitions and adapting join strategies, including converting a sort-merge join to a broadcast join when runtime statistics show that a side is small enough
+ 
+ ![alt text](image.png)
+
+2. ## Broadcast Joins: 
+Use the broadcast function (broadcast()) to send a small lookup table to all worker nodes entirely, avoiding the shuffle phase and any associated join-key skew.
+
+3. ## Isolating Skewed Keys: 
+- Filter out extremely heavy or null keys, process them separately (such as via a dedicated broadcast join), and combine the final results using a union operation.
+
+4. ## Custom Partitioning & Bucketing: 
+Pre-organize data files using table bucketing (bucketBy) or define custom partition logic so that frequently joined columns distribute records more uniformly
+
